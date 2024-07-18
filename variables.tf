@@ -427,12 +427,6 @@ variable "kubeclarity_enabled" {
   type        = bool
 }
 
-variable "kubeclarity_namespace" {
-  description = "Name of the Kubernetes namespace where the kubeclarity deployment will be deployed."
-  default     = "kubeclarity"
-  type        = string
-}
-
 variable "kubecost_enabled" {
   description = "Enable or disable the deployment of an Kubecost for Kubernetes."
   type        = bool

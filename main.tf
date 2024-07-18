@@ -284,127 +284,26 @@ data "kubernetes_service" "istio-ingress" {
 }
 
 ##KUBECLARITY
-resource "kubernetes_namespace" "kube-clarity" {
-  count = var.kubeclarity_enabled ? 1 : 0
-  metadata {
-    name = var.kubeclarity_namespace
-  }
-}
-
-resource "random_password" "kube-clarity" {
+module "kubeclarity" {
+  source = "./modules/kubeclarity"
   count   = var.kubeclarity_enabled ? 1 : 0
-  length  = 20
-  special = false
-}
-
-resource "kubernetes_secret" "kube-clarity" {
-  count      = var.kubeclarity_enabled ? 1 : 0
-  depends_on = [kubernetes_namespace.kube-clarity]
-  metadata {
-    name      = "basic-auth"
-    namespace = var.kubeclarity_namespace
-  }
-
-  data = {
-    auth = "admin:${bcrypt(random_password.kube-clarity[0].result)}"
-  }
-
-  type = "Opaque"
-}
-
-resource "helm_release" "kubeclarity" {
-  count      = var.kubeclarity_enabled ? 1 : 0
-  name       = "kubeclarity"
-  chart      = "kubeclarity"
-  version    = "2.23.0"
-  namespace  = var.kubeclarity_namespace
-  repository = "https://openclarity.github.io/kubeclarity"
-  values = [
-    templatefile("${path.module}/modules/kubeclarity/values.yaml", {
-      hostname  = var.kubeclarity_hostname
-      namespace = var.kubeclarity_namespace
-    })
-  ]
+  kubeclarity_enabled   = var.kubeclarity_enabled
 }
 
 #Kubecost
-
-data "aws_eks_addon_version" "kubecost" {
-  count              = var.kubecost_enabled ? 1 : 0
-  addon_name         = "kubecost_kubecost"
-  kubernetes_version = data.aws_eks_cluster.eks.version
-  most_recent        = true
+module "kubecost" {
+  source              = "./modules/kubecost"
+  count               = var.kubecost_enabled ? 1 : 0
+  depends_on          = [ module.ingress-nginx ]
+  cluster_issuer      = var.cluster_issuer
+  ingress_class_name  = var.ingress_nginx_config.ingress_class_name
+  eks_cluster_name    = var.eks_cluster_name
+  worker_iam_role_arn = var.worker_iam_role_arn
+  kubernetes_version  = data.aws_eks_cluster.eks.version
+  kubecost_enabled    = var.kubecost_enabled
 }
 
-resource "aws_eks_addon" "kubecost" {
-  count                    = var.kubecost_enabled ? 1 : 0
-  cluster_name             = var.eks_cluster_name
-  addon_name               = "kubecost_kubecost"
-  addon_version            = data.aws_eks_addon_version.kubecost[0].version
-  service_account_role_arn = var.worker_iam_role_arn
-  preserve                 = true
-}
-
-resource "random_password" "kubecost" {
-  count   = var.kubecost_enabled ? 1 : 0
-  length  = 20
-  special = false
-}
-
-resource "kubernetes_secret" "kubecost" {
-  count      = var.kubecost_enabled ? 1 : 0
-  depends_on = [aws_eks_addon.kubecost]
-  metadata {
-    name      = "basic-auth"
-    namespace = "kubecost"
-  }
-
-  data = {
-    auth = "admin:${bcrypt(random_password.kubecost[0].result)}"
-  }
-
-  type = "Opaque"
-}
-
-resource "kubernetes_ingress_v1" "kubecost" {
-  count                  = var.kubecost_enabled ? 1 : 0
-  depends_on             = [aws_eks_addon.kubecost, kubernetes_secret.kubecost, module.ingress-nginx]
-  wait_for_load_balancer = true
-  metadata {
-    name      = "kubecost"
-    namespace = "kubecost"
-    annotations = {
-      "kubernetes.io/ingress.class"             = var.ingress_nginx_config.ingress_class_name
-      "cert-manager.io/cluster-issuer"          = var.cluster_issuer
-      "nginx.ingress.kubernetes.io/auth-type"   = "basic"
-      "nginx.ingress.kubernetes.io/auth-secret" = "basic-auth"
-      "nginx.ingress.kubernetes.io/auth-realm"  = "Authentication Required - kubecost"
-    }
-  }
-  spec {
-    rule {
-      host = var.kubecost_hostname
-      http {
-        path {
-          path = "/"
-          backend {
-            service {
-              name = "cost-analyzer-cost-analyzer"
-              port {
-                number = 9090
-              }
-            }
-          }
-        }
-      }
-    }
-    tls {
-      secret_name = "tls-kubecost"
-      hosts       = [var.kubecost_hostname]
-    }
-  }
-}
-
+#Metrics-Server-VPA
 module "metrics-server-vpa" {
   source     = "./modules/metrics-server-vpa"
   count      = var.metrics_server_enabled ? 1 : 0
@@ -444,25 +343,8 @@ data "kubernetes_secret" "defectdojo" {
 }
 
 #falco
-resource "kubernetes_namespace" "falco" {
-  count = var.falco_enabled ? 1 : 0
-  metadata {
-    name = "falco"
-  }
-}
-
-resource "helm_release" "falco" {
+module "falco" {
+  source = "./modules/falco"
   count      = var.falco_enabled ? 1 : 0
-  depends_on = [kubernetes_namespace.falco]
-  name       = "falco"
-  namespace  = "falco"
-  chart      = "falco"
-  repository = "https://falcosecurity.github.io/charts"
-  timeout    = 600
-  version    = "4.0.0"
-  values = [
-    templatefile("${path.module}/modules/falco/config/values.yaml", {
-      slack_webhook = var.slack_webhook
-    })
-  ]
+  slack_webhook = var.slack_webhook
 }

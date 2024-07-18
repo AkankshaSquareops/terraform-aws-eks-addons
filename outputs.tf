@@ -15,20 +15,12 @@ output "efs_id" {
 
 output "kubeclarity" {
   description = "Kubeclarity endpoint and credentials"
-  value = var.kubeclarity_enabled ? {
-    username = "admin",
-    password = nonsensitive(random_password.kube-clarity[0].result),
-    url      = var.kubeclarity_hostname
-  } : null
+  value       = module.kubeclarity[0].kubeclarity
 }
 
 output "kubecost" {
+  value       = module.kubecost[0].kubecost
   description = "Kubecost endpoint and credentials"
-  value = var.kubecost_enabled ? {
-    username = "admin",
-    password = nonsensitive(random_password.kubecost[0].result),
-    url      = var.kubecost_hostname
-  } : null
 }
 
 output "istio_ingressgateway_dns_hostname" {

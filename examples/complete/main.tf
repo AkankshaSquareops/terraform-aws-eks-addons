@@ -1,5 +1,5 @@
 locals {
-  region      = "us-west-1"
+  region      = "us-west-2"
   environment = "test"
   name        = "eks"
   additional_tags = {
@@ -7,7 +7,7 @@ locals {
     Expires    = "Never"
     Department = "Engineering"
   }
-  kms_key_arn  = "arn:aws:kms:us-west-1:xxxxxxx:key/mrk-xxxxxxx" # pass ARN of EKS created KMS key
+  kms_key_arn  = "arn:aws:kms:us-west-2:381491984451:key/ce66da78-bb7f-442b-86f2-6661b286fc5d" # pass ARN of EKS created KMS key
   ipv6_enabled = false
 }
 
@@ -15,14 +15,14 @@ module "eks-addons" {
   source               = "../.."
   name                 = local.name
   tags                 = local.additional_tags
-  vpc_id               = "vpc-xxxxxx"
-  private_subnet_ids   = ["subnet-xxxxx", "subnet-xxxxx"]
+  vpc_id               = "vpc-02b6fdd7d7c5a4937"
+  private_subnet_ids   = ["subnet-0bd477b0c39a0383c", "subnet-091d70732b78c3cca"]
   environment          = local.environment
   ipv6_enabled         = local.ipv6_enabled
   kms_key_arn          = local.kms_key_arn
-  kms_policy_arn       = "arn:aws:iam::xxx:policy/eks-kms-policy" ## eks module will create kms_policy_arn
-  worker_iam_role_name = "update-eks-node-role"
-  worker_iam_role_arn  = "arn:aws:iam::xxx:role/-eks-node-role"
+  kms_policy_arn       = "arn:aws:iam::381491984451:policy/test-eks-kubernetes-pvc-kms-policy" ## eks module will create kms_policy_arn
+  worker_iam_role_name = "test-eks-node-role"
+  worker_iam_role_arn  = "arn:aws:iam::381491984451:role/test-eks-node-role"
   eks_cluster_name     = data.aws_eks_cluster.cluster.name
   ## default addons
   amazon_eks_vpc_cni_enabled = false
