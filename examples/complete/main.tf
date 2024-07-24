@@ -143,8 +143,11 @@ module "eks-addons" {
   kubecost_enabled  = false # to enable kube cost
   kubecost_hostname = "kubecost.prod.in"
   ## defectdojo
-  defectdojo_enabled  = false # to enable defectdojo
+  defectdojo_enabled  = true # Ensure to enable ingress-nginx and single_az_ebs_gp3_storage_class along with defectdojo
   defectdojo_hostname = "defectdojo.prod.in"
+  defectdojo_config = {
+    values = [file("${path.module}/config/defectdojo.yaml")]
+  }
   ## falco
   falco_enabled = false # to enable falco
   slack_webhook = "xoxb-379541400966-iibMHnnoaPzVl"

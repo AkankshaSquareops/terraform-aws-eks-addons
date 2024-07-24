@@ -415,34 +415,15 @@ module "metrics-server-vpa" {
 }
 
 #defectdojo
-resource "kubernetes_namespace" "defectdojo" {
+module "defectdojo" {
+  source = "./modules/defectdojo"
   count = var.defectdojo_enabled ? 1 : 0
-  metadata {
-    name = "defectdojo"
-  }
-}
-
-resource "helm_release" "defectdojo" {
-  count      = var.defectdojo_enabled ? 1 : 0
-  depends_on = [kubernetes_namespace.defectdojo]
-  name       = "defectdojo"
-  namespace  = "defectdojo"
-  chart      = "${path.module}/modules/defectdojo/"
-  timeout    = 600
-  values = [
-    templatefile("${path.module}/modules/defectdojo/values.yaml", {
-      hostname           = var.defectdojo_hostname,
-      storage_class_name = var.storage_class_name
-    })
-  ]
-}
-
-data "kubernetes_secret" "defectdojo" {
-  count      = var.defectdojo_enabled ? 1 : 0
-  depends_on = [helm_release.defectdojo]
-  metadata {
-    name      = "defectdojo"
-    namespace = "defectdojo"
+  depends_on = [ module.ingress-nginx, module.aws-ebs-csi-driver ]
+  defectdojo_hostname           = var.defectdojo_hostname
+  storage_class_name            = var.storage_class_name
+  ingress_class_name            = var.enable_private_nlb ? "internal-${var.ingress_nginx_config.ingress_class_name}" : var.ingress_nginx_config.ingress_class_name
+  helm_config = {
+    values = var.defectdojo_config.values
   }
 }
 

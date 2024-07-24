@@ -506,6 +506,16 @@ variable "defectdojo_hostname" {
   type        = string
 }
 
+variable "defectdojo_config" {
+  description = "Configuration for the Defectdojo Helm release"
+  type = object({
+    values = list(string)
+  })
+  default = {
+    values = []
+  }
+}
+
 variable "storage_class_name" {
   description = "Specify the hostname for the kubecsot. "
   default     = "infra-service-sc"

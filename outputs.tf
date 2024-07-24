@@ -38,11 +38,7 @@ output "istio_ingressgateway_dns_hostname" {
 
 output "defectdojo" {
   description = "DefectDojo endpoint and credentials"
-  value = var.defectdojo_enabled ? {
-    username = "admin",
-    password = nonsensitive(data.kubernetes_secret.defectdojo[0].data["DD_ADMIN_PASSWORD"]),
-    url      = var.defectdojo_hostname
-  } : null
+  value = var.defectdojo_enabled && length(module.defectdojo) > 0 ? module.defectdojo[0].defectdojo : null
 }
 
 output "k8s_dashboard_admin_token" {
